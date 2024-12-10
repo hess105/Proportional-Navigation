@@ -21,53 +21,91 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-# Global Variables
-VELO_PURSER = 0
-VELO_TARGET = 0
-HEADING_PURSER = 0
-HEADING_TARGET = 0
-POS_PURSER = 0
-POS_TARGET = 0
-LOS_RATE = 0
-ACCELERATION = 0
+N = 3
 
 # Functions
 
 def generate_starting_conditions():
-    global VELO_PURSER, VELO_TARGET, HEADING_PURSER, HEADING_TARGET, POS_PURSER, POS_TARGET
+    
+    # Initial Velocities
+    velocity_pursuer = np.array([[12], [5]])
+    velocity_target = np.array([[6], [2]])
 
-    VELO_PURSER = np.array([[np.random.uniform(0, 100)], [np.random.uniform(0, 100)]])
-    VELO_TARGET = np.array([[np.random.uniform(0, 100)], [np.random.uniform(0, 100)]])
-    HEADING_PURSER = np.random.uniform(0, 360)
-    HEADING_TARGET = np.random.uniform(0, 360)
-    POS_PURSER = np.array([[0], [0]])
-    POS_TARGET = np.array([[np.random.uniform(0, 100)], [np.random.uniform(0, 100)]])
-    pass
+    # Initial Positions
+    position_pursuer = np.array([[0], [0]])
+    position_target = np.array([[50], [100]])
 
-def plot_position():
-    global VELO_PURSER, VELO_TARGET, HEADING_PURSER, HEADING_TARGET
+    # Initial Acceleration
+    acceleration = np.array([[0], [0]])
+
+    return (velocity_pursuer, velocity_target, position_pursuer, position_target, acceleration)
+
+def calculate_acceleration(velocity_pursuer, velocity_target, position_pursuer, position_target, los_angle, los_angle_old):
+
+    # Calculate Target Velocity relative to pursuer
+    relative_velocity_target = velocity_target - velocity_pursuer
+
+    delta_los = (los_angle - los_angle_old) 
+
+    # Calculate Acceleration
+    acceleration = N * relative_velocity_target * delta_los
+
+    print("ACCELERATION: x:%f y:%f" % (acceleration[0], acceleration[1]))
+
+    return acceleration
+
+def calculate_los(velocity_pursuer, position_pursuer, position_target):
+
+    # Calculate Angle between velocity vetor and vetor from pursuer to target
+    vector_to_target = np.array([[position_target[0] - position_pursuer[0]], [position_target[1] - position_pursuer[1]]])
+    
+    # Flatten to work with
+    flat_vtt = vector_to_target.flatten()
+    flat_vel = velocity_pursuer.flatten()
+
+    angle = np.arccos(np.dot(flat_vtt, flat_vel) / (np.linalg.norm(flat_vtt) * np.linalg.norm(flat_vel)))
+
+    print("LOS ANGLE: %f" % angle)
+
+    return angle
+
+def calculate_new_conditions(velocity_pursuer, velocity_target, position_pursuer, position_target, acceleration):
+
+    # Calculate new velocity and position
+    velocity_pursuer = velocity_pursuer + acceleration
+    position_pursuer = position_pursuer + velocity_pursuer
+
+    print("PURSUER POS: x:%f y:%f" % (position_pursuer[0], position_pursuer[1]))
+
+    velocity_target = velocity_target
+    position_target = position_target + velocity_target
+
+    print("TARGET POS: x:%f y:%f" % (position_target[0], position_target[1]))
+
+    return (velocity_pursuer, velocity_target, position_pursuer, position_target)
+
+def plot_position(velocity_pursuer, velocity_target, position_pursuer, position_target):
 
     # Define positions based on initial velocities and headings
-    velocity_purser = VELO_PURSER.flatten()
-    velocity_target = VELO_TARGET.flatten()
+    vel_pursuer = velocity_pursuer.flatten()
+    vel_target = velocity_target.flatten()
 
-    position_purser = POS_PURSER.flatten()
-    position_target = POS_TARGET.flatten()
+    pos_pursuer = position_pursuer.flatten()
+    pos_target = position_target.flatten()
 
     # Plotting
     plt.figure(figsize=(8, 6))
     plt.quiver(
-        position_purser[0], position_purser[1], velocity_purser[0], velocity_purser[1],
-        angles='xy', scale_units='xy', scale=1, color='blue', label='Purser Velocity'
+        pos_pursuer[0], pos_pursuer[1], vel_pursuer[0], vel_pursuer[1],
+        angles='xy', scale_units='xy', scale=1, color='blue', label='Pursuer Velocity'
     )
     plt.quiver(
-        position_target[0], position_target[1], velocity_target[0], velocity_target[1],
+        pos_target[0], pos_target[1], vel_target[0], vel_target[1],
         angles='xy', scale_units='xy', scale=1, color='red', label='Target Velocity'
     )
 
-    plt.xlim(-10, 490)
-    plt.ylim(-10, 490)
+    plt.xlim(-10, 240)
+    plt.ylim(-10, 240)
     plt.axhline(0, color='black', linewidth=0.5)
     plt.axvline(0, color='black', linewidth=0.5)
     plt.grid(color='gray', linestyle='--', linewidth=0.5)
@@ -76,21 +114,37 @@ def plot_position():
     plt.ylabel("Y Position")
     plt.legend()
     plt.show()
-    pass
-
-def calc_closing_velocity():
-    pass
-
-def calc_los_rate():
-    pass
-
-def calc_acceleration():
-    pass
 
 # Main Execution
 if __name__ == "__main__":
-    generate_starting_conditions()
-    plot_position()
+
+    # Declare Variables
+    time_iterations = 20
+    vel_pursuer     = [np.array([[0], [0]])] * time_iterations
+    vel_target      = [np.array([[0], [0]])] * time_iterations
+    pos_pursuer     = [np.array([[0], [0]])] * time_iterations
+    pos_target      = [np.array([[0], [0]])] * time_iterations
+    acceleration    = [np.array([[0], [0]])] * time_iterations
+    los_angle       = [np.array([[0], [0]])] * time_iterations
+
+    vel_pursuer[0], vel_target[0], pos_pursuer[0], pos_target[0], acceleration[0] = generate_starting_conditions()
+
+    for i in range(time_iterations - 1):
+
+        
+        print("\nITERATION %f" % i)
+
+        los_angle[i] = calculate_los(vel_pursuer[i], pos_pursuer[i], pos_target[i])
+
+        if i != 0:
+            acceleration[i] = calculate_acceleration(vel_pursuer[i], vel_target[i], pos_pursuer[i], pos_target[i], los_angle[i], los_angle[i - 1])
+
+        vel_pursuer[i + 1], vel_target[i + 1], pos_pursuer[i + 1], pos_target[i + 1] = calculate_new_conditions(vel_pursuer[i], vel_target[i], pos_pursuer[i], pos_target[i], acceleration[i])
+
+
+
+    # plot_position(vel_pursuer[0], vel_target[0], pos_pursuer[0], pos_target[0])
+
     pass
 
 
