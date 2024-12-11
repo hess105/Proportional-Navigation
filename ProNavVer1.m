@@ -2,15 +2,15 @@
 %% Parameters
 N = 3; % Navigation constant (typical values: 3-5)
 dt = 0.001; % Time step for simulation
-max_steps = 300000; % Maximum number of iterations
+max_steps = 1000000; % Maximum number of iterations
 
 %% ______________
 %% Initialization
 pursuer_pos = [0; 0];
-target_pos = [5000; 5000];
+target_pos = [0; 5000];
 
 pursuer_velo = [10; 50];
-target_velo = [-9; -50];
+target_velo = [50; 10];
 
 %% _________________________
 %% Storage for visualization
@@ -22,6 +22,9 @@ target_trajectory = nan(max_steps, 2);
 % Assign initial conidtions
 pursuer_trajectory(1,:) = pursuer_pos';
 target_trajectory(1,:) = target_pos';
+
+% Reset some variables in case of no clear
+interception = [NaN,NaN];
 
 %% _______________ 
 %% Simulation loop
@@ -55,7 +58,7 @@ for step = 1:max_steps
     target_trajectory(step, :) = target_pos';
 
     % Check if intercept occurred
-    if norm(target_pos - pursuer_pos) < 1 % Threshold for interception
+    if norm(target_pos - pursuer_pos) < 0.1 % Threshold for interception
         interception = pursuer_pos';
         time = step * dt;
         fprintf('Intercept occurred at %.2f seconds (step %d)\n', time, step);
