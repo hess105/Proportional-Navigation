@@ -10,7 +10,7 @@ pursuer_pos = [0; 0];
 target_pos = [0; 5000];
 
 pursuer_velo = [10; 50];
-target_velo = [50; 10];
+target_velo = [30; 20];
 
 %% _________________________
 %% Storage for visualization
